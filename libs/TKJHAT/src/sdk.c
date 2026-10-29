@@ -555,7 +555,22 @@ uint32_t veml6030_read_light() {
     //            Kerro arvo sopivalla kertoimella huomioiden 100 ms integraatioaika ja vahvistus 1/8
     //            käyttäen VEML6030-sovellussuunnitteluasiakirjan sivun 5 tietoja:https://www.vishay.com/docs/84367/designingveml6030.pdf
     //            Lopuksi tallenna arvo muuttujaan luxVal_uncorrected.
-  
+
+    // Initializing I2C-bus
+
+    init_i2c_default();
+
+    // Read and write buffers for I2C messages
+   
+   uint8_t rxBuffer[2];
+   
+   uint8_t txBuffer [0] = VEML6030_ALS_REG; 
+
+    i2c_write_blocking(i2c_default, VEML6030_I2C_ADDRESS , txBuffer, 1, true);
+    i2c_read_blocking(i2c_default, VEML6030_I2C_ADDRESS, rxBuffer, 2, false);                
+    uint16_t temp = (uint16_t)rxBuffer[1] << 8;
+    uint16_t temp2 = (uint16_t)rxBuffer[0];
+    temp = temp2 &&
     uint32_t luxVal_uncorrected = 0; 
     if (luxVal_uncorrected>1000){
         // Polynomial is pulled from pg 10 of the datasheet. 

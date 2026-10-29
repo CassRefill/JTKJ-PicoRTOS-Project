@@ -38,7 +38,7 @@ static void sensor_task(void *arg){
     (void)arg;
     // Tehtävä 2: Alusta valoisuusanturi. Etsi SDK-dokumentaatiosta sopiva funktio.
     // Exercise 2: Init the light sensor. Find in the SDK documentation the adequate function.
-   
+    init_veml6030();
     for(;;){
         
         // Tehtävä 2: Muokkaa tästä eteenpäin sovelluskoodilla. Kommentoi seuraava rivi.
@@ -46,7 +46,7 @@ static void sensor_task(void *arg){
         // Exercise 2: Modify with application code here. Comment following line.
         //             Read sensor data and print it out as string; 
         tight_loop_contents(); 
-
+        veml6030_read_light();
 
    
 
@@ -67,7 +67,7 @@ static void sensor_task(void *arg){
         
         // Exercise 2. Just for sanity check. Please, comment this out
         // Tehtävä 2: Just for sanity check. Please, comment this out
-        printf("sensorTask\n");
+        //printf("sensorTask\n");
 
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
