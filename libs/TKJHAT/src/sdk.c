@@ -564,14 +564,14 @@ uint32_t veml6030_read_light() {
    
     uint8_t rxBuffer[2];
    
-    uint8_t txBuffer[1]; 
+    uint8_t txBuffer[1] = {VEML6030_ALS_REG}; 
 
     i2c_write_blocking(i2c_default, VEML6030_I2C_ADDRESS , txBuffer, 1, true);
     i2c_read_blocking(i2c_default, VEML6030_I2C_ADDRESS, rxBuffer, 2, false);                
     uint16_t temp = (uint16_t)rxBuffer[1] << 8;
     uint16_t temp2 = (uint16_t)rxBuffer[0];
 
-    temp = temp && temp2;
+    temp = temp2 | temp;
 
     uint32_t luxVal_uncorrected = temp * 0.5376; 
     if (luxVal_uncorrected>1000){
