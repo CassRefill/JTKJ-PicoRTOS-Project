@@ -10,6 +10,10 @@
 
 #include "tkjhat/sdk.h"
 
+#include <tusb.h>
+#include "usbSerialDebug/helper.h"
+#include <time.h>
+
 // Exercise 4. Include the libraries necessaries to use the usb-serial-debug, and tinyusb
 // Tehtävä 4 . Lisää usb-serial-debugin ja tinyusbin käyttämiseen tarvittavat kirjastot.
 
@@ -103,9 +107,23 @@ static void print_task(void *arg){
         //            Esimerkki löytyy hello_dual_cdc-projektista.
         //            Tällä menetelmällä kirjoitettu data tulee antaa CSV-muodossa:
         //            timestamp, illuminance
+        char buf[150];
+        time_t now = time(NULL);
+        struct tm *t = localtime(&now);
 
-
-
+        if(tud_cdc_n_connected(CDC_ITF_TX)){
+            //Send them using tucdc_n_write to the ACM1
+            snprintf(buf, sizeof(buf),"timestamp: %02d:%02d:%02d, luminance: %lu\n", t->tm_hour, t->tm_min, t->tm_sec, ambientLight);
+            tud_cdc_n_write(CDC_ITF_TX,buf,strlen(buf));
+            tud_cdc_n_write_flush(CDC_ITF_TX);
+            
+        }
+        //Send also the debug log to the ACM0
+        if (usb_serial_connected()) {
+            snprintf(buf, sizeof(buf),"CDC0: Lux:%lu\n", ambientLight);
+            usb_serial_print(buf);
+            usb_serial_flush();
+        }
 
         // Exercise 3. Just for sanity check. Please, comment this out
         // Tehtävä 3: Just for sanity check. Please, comment this out
@@ -120,14 +138,13 @@ static void print_task(void *arg){
 // Exercise 4: Uncomment the following line to activate the TinyUSB library.  
 // Tehtävä 4:  Poista seuraavan rivin kommentointi aktivoidaksesi TinyUSB-kirjaston. 
 
-/*
 static void usbTask(void *arg) {
     (void)arg;
     while (1) {
         tud_task();              // With FreeRTOS wait for events
                                  // Do not add vTaskDelay. 
     }
-}*/
+}
 
 int main() {
 
@@ -142,7 +159,7 @@ int main() {
     //             Lisää CMakeLists.txt-tiedoston target_link_libraries-kohtaan usb_serial_debug.
     //             Poista CMakeLists.txt-tiedostosta käytöstä pico_enable_stdio_usb
 
-    stdio_init_all();
+    //stdio_init_all();
 
     // Uncomment this lines if you want to wait till the serial monitor is connected
     /*while (!stdio_usb_connected()){
@@ -176,12 +193,10 @@ int main() {
     // Tehtävä 4: Poista tämän xTaskCreate-rivin kommentointi luodaksesi tehtävän,
     // joka mahdollistaa kaksikanavaisen USB-viestinnän.
 
-    /*
     xTaskCreate(usbTask, "usb", 2048, NULL, 3, &hUSB);
     #if (configNUMBER_OF_CORES > 1)
         vTaskCoreAffinitySet(hUSB, 1u << 0);
     #endif
-    */
 
 
     // Create the tasks with xTaskCreate
@@ -207,6 +222,8 @@ int main() {
         printf("Print Task creation failed\n");
         return 0;
     }
+    tusb_init();
+    usb_serial_init();
 
     // Start the scheduler (never returns)
     vTaskStartScheduler();
