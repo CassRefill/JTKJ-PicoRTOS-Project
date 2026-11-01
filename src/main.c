@@ -45,11 +45,9 @@ static void sensor_task(void *arg){
         //             
         // Exercise 2: Modify with application code here. Comment following line.
         //             Read sensor data and print it out as string; 
-        tight_loop_contents(); 
-        veml6030_read_light();
+        tight_loop_contents();
 
-   
-
+        printf("light:%lu", veml6030_read_light());
 
         // Tehtävä 3:  Muokkaa aiemmin Tehtävässä 2 tehtyä koodia ylempänä.
         //             Jos olet oikeassa tilassa, tallenna anturin arvo tulostamisen sijaan
