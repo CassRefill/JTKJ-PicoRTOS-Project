@@ -28,15 +28,36 @@ void buzzer_task(void *pvParameters);
 void imu_task(void *pvParameters);
 
 //Add here necessary states
-enum state { IDLE=1, READ_POS=2, END_MSG=3, PLAY_MSG=4, SEND_MSG=5, 
-    SEND_SPACE=6, SAVE=7, NEW_MSG=8 };
+enum state { IDLE=1, READ_POS=2, END_MSG=3, PLAY_MSG=4 };
 enum state programState = IDLE;
+
+uint16_t RGB[] = {0, 255, 0};
 
 void sw1_task(void *pvParameters) {
     (void)pvParameters;
 
     while (1) {
         sw1_pressed = gpio_get(SW1_PIN);
+        if(sw1_pressed)
+        {
+            programState = READ_POS;
+        }
+        vTaskDelay(10);
+    }
+    while (2) {
+        sw1_pressed = gpio_get(SW1_PIN);
+        if(sw1_pressed)
+        {
+            programState = END_MSG;
+        }
+        vTaskDelay(10);
+    }
+    while (3) {
+        sw1_pressed = gpio_get(SW1_PIN);
+        if(sw1_pressed)
+        {
+            programState = READ_POS;
+        }
         vTaskDelay(10);
     }
 }
@@ -54,11 +75,25 @@ void rgb_task(void *pvParameters) {
     (void)pvParameters;
 
     while (1) {
-        rgb_led_write(20, 30, 255);
+        rgb_led_write(RGB[0], RGB[1], RGB[2]);
         vTaskDelay(500);
-        rgb_led_write(255, 30, 10);
+    }
+    while (2)
+    {
+        RGB[0], RGB[1] = 255, 0;
+        rgb_led_write(RGB[0], RGB[1], RGB[2]);
         vTaskDelay(500);
-        rgb_led_write(50, 255, 10);
+    }
+    while (3)
+    {
+        RGB[2], RGB[0] = 255, 0;
+        rgb_led_write(RGB[0], RGB[1], RGB[2]);
+        vTaskDelay(500);
+    }
+    while (4)
+    {
+        stop_rgb_led();
+        init_rgb_led();
         vTaskDelay(500);
     }
 }
@@ -66,10 +101,8 @@ void rgb_task(void *pvParameters) {
 void buzzer_task(void *pvParameters) {
     (void)pvParameters;
 
-    while (1) {
-        if (sw2_pressed) {
-            buzzer_play_tone(440, 500);
-        }
+    while (4) {
+        buzzer_play_tone(440, 500);
         vTaskDelay(10);
     }
 }
@@ -79,7 +112,7 @@ void imu_task(void *pvParameters) {
     
     float ax, ay, az, gx, gy, gz, t;
 
-    while (1)
+    while (2)
     {
         if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
             float temp_c = (float)t / 128.0f;
@@ -117,6 +150,14 @@ int main() {
     // Initialize I2C
     init_i2c_default();
 
+    // Create tasks
+    
+    xTaskCreate(sw2_task, "SW2Task", 256, NULL, 1, NULL);
+    xTaskCreate(rgb_task, "RGBTask", 256, NULL, 1, NULL);
+    xTaskCreate(buzzer_task, "BuzzerTask", 256, NULL, 4, NULL);
+    xTaskCreate(imu_task, "IMUTask", 256, NULL, 1, NULL);
+    xTaskCreate(sw1_task, "SW1Task", 64, NULL, 1, NULL);
+    
     //Initialize IMU
     if (init_ICM42670() == 0) {
         printf("ICM-42670P initialized successfully!\n");
@@ -139,29 +180,6 @@ int main() {
     } else {
         printf("Failed to initialize ICM-42670P.\n");
     }
-    float ax, ay, az, gx, gy, gz, t;
-
-    while(true){
-        
-        if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
-            
-            printf("Accel: X=%f, Y=%f, Z=%f | Gyro: X=%f, Y=%f, Z=%f| Temp: %2.2f°C\n", ax, ay, az, gx, gy, gz, t);
-
-        } else {
-            printf("Failed to read imu data\n");
-        }
-        sleep_ms(1000);
-
-    }// end infinite loop
-    
-
-    // Create tasks
-    
-    xTaskCreate(sw2_task, "SW2Task", 256, NULL, 1, NULL);
-    xTaskCreate(rgb_task, "RGBTask", 256, NULL, 1, NULL);
-    xTaskCreate(buzzer_task, "BuzzerTask", 256, NULL, 4, NULL);
-    xTaskCreate(imu_task, "IMUTask", 256, NULL, 1, NULL);
-    xTaskCreate(sw1_task, "SW1Task", 64, NULL, 1, NULL);
     
     // Start the FreeRTOS scheduler
     vTaskStartScheduler();
