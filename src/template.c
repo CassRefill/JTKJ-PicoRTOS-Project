@@ -20,6 +20,9 @@
 // Flag to indicate button press
 volatile bool sw1_pressed = false;
 volatile bool sw2_pressed = false;
+// Indicate whether to save a character or send a space for State 2 Button 2 press
+volatile bool SAVE = false;
+volatile bool SEND_SPACE = false;
 
 void sw1_task(void *pvParameters);
 void sw2_task(void *pvParameters);
@@ -31,7 +34,11 @@ void imu_task(void *pvParameters);
 enum state { IDLE=1, READ_POS=2, END_MSG=3, PLAY_MSG=4 };
 enum state programState = IDLE;
 
+// Array to store RGB values
 uint16_t RGB[] = {0, 255, 0};
+
+// Array to store message
+char msg[500];
 
 void sw1_task(void *pvParameters) {
     (void)pvParameters;
@@ -56,6 +63,7 @@ void sw1_task(void *pvParameters) {
         sw1_pressed = gpio_get(SW1_PIN);
         if(sw1_pressed)
         {
+            memset(msg, 0, sizeof(msg));
             programState = READ_POS;
         }
         vTaskDelay(10);
@@ -67,7 +75,35 @@ void sw2_task(void *pvParameters) {
 
     while (1) {
         sw2_pressed = gpio_get(SW2_PIN);
+        if (sw2_pressed)
+        {
+            programState = PLAY_MSG;
+        }
         vTaskDelay(10);
+    }
+    while (2) {
+        sw2_pressed = gpio_get(SW2_PIN);
+        if (sw2_pressed)
+        {
+            SAVE == true;
+        }
+        vTaskDelay(2000);
+        if (sw2_pressed)
+        {
+            SEND_SPACE == true;
+        }
+    }
+    while (3) {
+        sw2_pressed = gpio_get(SW2_PIN);
+        if (sw2_pressed)
+        {
+            programState == PLAY_MSG;
+        }
+        vTaskDelay(2000);
+        if (sw2_pressed)
+        {
+            programState == IDLE;
+        }
     }
 }
 
@@ -90,37 +126,71 @@ void rgb_task(void *pvParameters) {
         rgb_led_write(RGB[0], RGB[1], RGB[2]);
         vTaskDelay(500);
     }
-    while (4)
-    {
-        stop_rgb_led();
-        init_rgb_led();
-        vTaskDelay(500);
-    }
 }
 
 void buzzer_task(void *pvParameters) {
     (void)pvParameters;
 
     while (4) {
-        buzzer_play_tone(440, 500);
-        vTaskDelay(10);
+        for(int j = 0; j < sizeof(msg); ++j)
+        {
+            init_rgb_led();
+
+            if(msg[j] == '-')
+            {
+                buzzer_play_tone(440, 500);
+                stop_rgb_led();
+            }
+            if(msg[j] == '.')
+            {
+                buzzer_play_tone(440, 250);
+                stop_rgb_led();
+            }
+            if(msg[j] == ' ')
+            {
+                stop_rgb_led();
+                buzzer_play_tone(0, 500);
+            }
+            else
+            {
+                break;
+            }
+        }
+        vTaskDelay(250);
     }
 }
 
 void imu_task(void *pvParameters) {
     (void)pvParameters;
+
+    short i = 0;
     
     float ax, ay, az, gx, gy, gz, t;
 
     while (2)
     {
         if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
-            float temp_c = (float)t / 128.0f;
-            printf("Accel: X=%d, Y=%d, Z=%d | Gyro: X=%d, Y=%d, Z=%d | Temp: %.2f°C\n", ax, ay, az, gx, gy, gz, temp_c);
+
+            if(gx + 10 >= 90 && gx - 10 <= 90 && SAVE == true)
+            {
+                msg[i] = '-';
+                SAVE == false;
+            }
+            else if(gx + 10 >= 0 && gx - 10 <= 0 && SAVE == true)
+            {
+                msg[i] = '.';
+                SAVE == false;
+            }
+            else if(SAVE == false && SEND_SPACE == true)
+            {
+                msg[i] = ' ';
+                SEND_SPACE == false;
+            }
 
         } else {
             printf("Failed to read imu data\n");
         }
+        ++i;
         vTaskDelay(pdMS_TO_TICKS(60));
     }
 
