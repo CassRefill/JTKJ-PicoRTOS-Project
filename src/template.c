@@ -145,6 +145,7 @@ void send_task(void *pvParameters) {
                 {
                     vTaskDelay(pdMS_TO_TICKS(60));
                 }
+                printf("\n\n\n\n\n\n\n\n\n\n\n\n");
                 programState = READ_POS;
             }
             else if(sw2_pressed)
@@ -236,7 +237,7 @@ void imu_task(void *pvParameters) {
                     printf("-");
                     ++i;
                 }
-                else if(az >= 0.75f || az <= -0.75f && SAVE == true)
+                else if((az >= 0.75f || az <= -0.75f) && SAVE == true)
                 {
                     msg[i] = '.';
                     printf(".");
