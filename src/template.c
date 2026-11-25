@@ -47,21 +47,25 @@ void initial_task(void *pvParameters) {
     init_sw2();
 
     while (1) {
-        sw1_pressed = gpio_get(SW1_PIN);
-        sw2_pressed = gpio_get(SW2_PIN);
+        if(programState == IDLE)
+        {  
+            sw1_pressed = gpio_get(SW1_PIN);
+            sw2_pressed = gpio_get(SW2_PIN);
 
-        rgb_led_write(RGB[0], RGB[1], RGB[2]);
+            rgb_led_write(RGB[0], RGB[1], RGB[2]);
 
-        if(sw1_pressed)
-        {
-            programState = READ_POS;
+            if(sw1_pressed)
+            {
+                programState = READ_POS;
+            }
+            else if (sw2_pressed)
+            {
+                programState = PLAY_MSG;
+            }
+
+        vTaskDelay(pdMS_TO_TICKS(100));
+
         }
-        else if (sw2_pressed)
-        {
-            programState = PLAY_MSG;
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -71,31 +75,37 @@ void write_task(void *pvParameters) {
     init_sw1();
     init_sw2();
 
-    while (2) {
-        RGB[0], RGB[1] = 255, 0;
-        rgb_led_write(RGB[0], RGB[1], RGB[2]);
+    while (1) {
+        if(programState == READ_POS)
+        {
+            RGB[0] = 255; RGB[1] = 0;
+            rgb_led_write(RGB[0], RGB[1], RGB[2]);
 
-        sw1_pressed = gpio_get(SW1_PIN);
-        sw2_pressed = gpio_get(SW2_PIN);
+            sw1_pressed = gpio_get(SW1_PIN);
+            sw2_pressed = gpio_get(SW2_PIN);
         
-        if(sw1_pressed)
-        {
-            programState = END_MSG;
-        }
-        else if(sw2_pressed)
-        {
-            vTaskDelay(pdMS_TO_TICKS(750));
-            if(!sw2_pressed)
+            if(sw1_pressed)
             {
-                SAVE = true;
+                programState = END_MSG;
             }
-            else
+            else if(sw2_pressed)
             {
-                SEND_SPACE = true;
+                vTaskDelay(pdMS_TO_TICKS(100));
+
+                sw2_pressed = gpio_get(SW2_PIN);
+
+                if(!sw2_pressed)
+                {
+                    SAVE = true;
+                }
+                else
+                {
+                    SEND_SPACE = true;
+                }
             }
-        }
 
         vTaskDelay(pdMS_TO_TICKS(500));
+        }
     }
 }
 
@@ -105,32 +115,38 @@ void send_task(void *pvParameters) {
     init_sw1();
     init_sw2();
 
-    while (3)
+    while (1)
     {
-        RGB[2], RGB[0] = 255, 0;
-        rgb_led_write(RGB[0], RGB[1], RGB[2]);
+        if(programState == END_MSG)
+        {
+            RGB[2] = 255; RGB[0] = 0;
+            rgb_led_write(RGB[0], RGB[1], RGB[2]);
         
-        sw1_pressed = gpio_get(SW1_PIN);
-        sw2_pressed = gpio_get(SW2_PIN);
+            sw1_pressed = gpio_get(SW1_PIN);
+            sw2_pressed = gpio_get(SW2_PIN);
 
-        if(sw1_pressed)
-        {
-            memset(msg, 0, sizeof(msg));
-            programState = READ_POS;
-        }
-        else if(sw2_pressed)
-        {
-            vTaskDelay(pdMS_TO_TICKS(750));
-            if(!sw2_pressed)
+            if(sw1_pressed)
             {
-                programState = PLAY_MSG;
+                memset(msg, 0, sizeof(msg));
+                programState = READ_POS;
             }
-            else
+            else if(sw2_pressed)
             {
-                programState = IDLE;
+                vTaskDelay(pdMS_TO_TICKS(100));
+
+                sw2_pressed = gpio_get(SW2_PIN);
+                if(!sw2_pressed)
+                {
+                    programState = PLAY_MSG;
+                }
+                else
+                {
+                    programState = IDLE;
+                }
             }
-        }
+        
         vTaskDelay(pdMS_TO_TICKS(500));
+        }
     }
 }
 
@@ -138,40 +154,41 @@ void buzzer_task(void *pvParameters) {
     (void)pvParameters;
 
     init_buzzer();
+    rgb_led_write(RGB[0], RGB[1], RGB[2]);
 
-    while (4) {
-        printf(msg);
-
-        for(int j = 0; j < sizeof(msg); ++j)
+    while (1) {
+        if(programState == PLAY_MSG)
         {
+            printf(msg);
+
+            for(int j = 0; j < sizeof(msg); ++j)
+            {
+                vTaskDelay(pdMS_TO_TICKS(500));
+
+                if(msg[j] == '-')
+                {
+                    buzzer_play_tone(400, 500);
+                    rgb_led_write(0, 0, 0);
+                }
+                else if(msg[j] == '.')
+                {
+                    buzzer_play_tone(400, 250);
+                    rgb_led_write(0, 0, 0);
+                }
+                else if(msg[j] == ' ')
+                {
+                    rgb_led_write(0, 0, 0);
+                    buzzer_play_tone(0, 500);
+                }
+                else
+                {
+                    buzzer_turn_off();
+                    programState = END_MSG;
+                }
+            }
+
             vTaskDelay(pdMS_TO_TICKS(500));
-
-            init_rgb_led();
-
-            if(msg[j] == '-')
-            {
-                buzzer_play_tone(400, 500);
-                stop_rgb_led();
-            }
-            if(msg[j] == '.')
-            {
-                buzzer_play_tone(400, 250);
-                stop_rgb_led();
-            }
-            if(msg[j] == ' ')
-            {
-                stop_rgb_led();
-                buzzer_play_tone(0, 500);
-            }
-            else
-            {
-                break;
-            }
         }
-
-        buzzer_turn_off();
-        programState = END_MSG;
-        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -180,40 +197,46 @@ void imu_task(void *pvParameters) {
 
     init_ICM42670();
 
+    ICM42670_start_with_default_values();
+
     short i = 0;
     
     float ax, ay, az, gx, gy, gz, t;
 
-    while (2)
+    while (1)
     {
-        ICM42670_start_with_default_values();
+        if(programState == READ_POS)
+        {
+            if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
 
-        if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
+                if(gz + 10 >= 90 && gz - 10 <= 90 && SAVE == true)
+                {
+                    msg[i] = '-';
+                    printf(msg);
+                    ++i;
+                    SAVE = false;
+                }
+                else if(gz + 10 >= 0 && gz - 10 <= 0 && SAVE == true)
+                {
+                    msg[i] = '.';
+                    printf(msg);
+                    ++i;
+                    SAVE = false;
+                }
+                else if(SAVE == false && SEND_SPACE == true)
+                {
+                    msg[i] = ' ';
+                    printf(msg);
+                    ++i;
+                    SEND_SPACE = false;
+                }
+            } 
+            else {
+                printf("Failed to read imu data\n");
+            }
 
-            if(gz + 10 >= 90 && gz - 10 <= 90 && SAVE == true)
-            {
-                msg[i] = '-';
-                printf(msg);
-                SAVE == false;
-            }
-            else if(gz + 10 >= 0 && gz - 10 <= 0 && SAVE == true)
-            {
-                msg[i] = '.';
-                printf(msg);
-                SAVE == false;
-            }
-            else if(SAVE == false && SEND_SPACE == true)
-            {
-                msg[i] = ' ';
-                printf(msg);
-                SEND_SPACE == false;
-            }
-            ++i;
-        } 
-        else {
-            printf("Failed to read imu data\n");
+            vTaskDelay(pdMS_TO_TICKS(50));
         }
-        vTaskDelay(pdMS_TO_TICKS(500));
     }
 
 }
@@ -260,7 +283,7 @@ int main() {
         printf("Buzzer Task creation failed\n");
         return 0;
     }
-    initRes = xTaskCreate(imu_task, "IMUTask", DEFAULT_STACK_SIZE, NULL, 4, &hIMU);
+    initRes = xTaskCreate(imu_task, "IMUTask", DEFAULT_STACK_SIZE, NULL, 3, &hIMU);
     if(initRes != pdPASS)
     {
         printf("IMU Task creation failed\n");
