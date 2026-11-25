@@ -62,7 +62,7 @@ void initial_task(void *pvParameters) {
             {
                 while(gpio_get(SW1_PIN))
                 {
-                    vTaskDelay(pdMS_TO_TICKS(60));
+                    vTaskDelay(pdMS_TO_TICKS(55));
                 }
                 memset(msg, 0, sizeof(msg));
                 i = 0;
@@ -72,7 +72,7 @@ void initial_task(void *pvParameters) {
             {
                 while(gpio_get(SW2_PIN))
                 {
-                    vTaskDelay(pdMS_TO_TICKS(60));
+                    vTaskDelay(pdMS_TO_TICKS(55));
                 }
                 programState = PLAY_MSG;
             }
@@ -97,13 +97,13 @@ void write_task(void *pvParameters) {
             {
                 while(gpio_get(SW1_PIN))
                 {
-                    vTaskDelay(pdMS_TO_TICKS(60));
+                    vTaskDelay(pdMS_TO_TICKS(55));
                 }
                 programState = END_MSG;
             }
             else if(sw2_pressed)
             {
-                vTaskDelay(pdMS_TO_TICKS(1200));
+                vTaskDelay(pdMS_TO_TICKS(1000));
 
                 sw2_pressed = gpio_get(SW2_PIN);
 
@@ -114,6 +114,7 @@ void write_task(void *pvParameters) {
                 else
                 {
                     SEND_SPACE = true;
+                    vTaskDelay(pdMS_TO_TICKS(200));
                 }
             }
         }
@@ -145,7 +146,6 @@ void send_task(void *pvParameters) {
                 {
                     vTaskDelay(pdMS_TO_TICKS(60));
                 }
-                printf("\n\n\n\n\n\n\n\n\n");
                 programState = READ_POS;
             }
             else if(sw2_pressed)
@@ -155,7 +155,6 @@ void send_task(void *pvParameters) {
                 sw2_pressed = gpio_get(SW2_PIN);
                 if(!sw2_pressed)
                 {
-                    printf("\n\n\n\n\n\n\n\n\n");
                     programState = PLAY_MSG;
                 }
                 else
@@ -182,7 +181,7 @@ void buzzer_task(void *pvParameters) {
     while (1) {
         if(programState == PLAY_MSG)
         {
-            printf("\nPlaying message...\n");
+            printf("Playing message...");
 
             for(int j = 0; j < sizeof(msg) - 1; ++j)
             {
@@ -320,7 +319,7 @@ int main() {
         return 0;
     }
 
-    printf("\n\n\n\n\n\n\n\nHello!\n");
+    printf("Hello!\n");
 
     // Start the FreeRTOS scheduler
     vTaskStartScheduler();
