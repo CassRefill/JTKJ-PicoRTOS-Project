@@ -99,6 +99,7 @@ void write_task(void *pvParameters) {
                 {
                     vTaskDelay(pdMS_TO_TICKS(55));
                 }
+                msg[i + 1] = '\n';
                 programState = END_MSG;
             }
             else if(sw2_pressed)
