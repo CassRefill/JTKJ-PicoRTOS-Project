@@ -228,7 +228,7 @@ int main() {
     TaskHandle_t hIN, hWR, hSE, hBuzz, hIMU = NULL;
 
     xTaskCreate(initial_task, "InitialTask", DEFAULT_STACK_SIZE, NULL, 1, &hIN);
-    xTaskCreate(write_task, "WriteTask", DEFAULT_STACK_SIZE, NULL, 1, &hWR);
+    xTaskCreate(write_task, "WriteTask", DEFAULT_STACK_SIZE, NULL, 2, &hWR);
     xTaskCreate(send_task, "SendTask", DEFAULT_STACK_SIZE, NULL, 3, &hSE);
     xTaskCreate(buzzer_task, "BuzzerTask", DEFAULT_STACK_SIZE, NULL, 4, &hBuzz);
     xTaskCreate(imu_task, "IMUTask", DEFAULT_STACK_SIZE, NULL, 2, &hIMU);
