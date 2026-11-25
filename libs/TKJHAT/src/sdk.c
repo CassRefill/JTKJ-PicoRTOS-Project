@@ -835,7 +835,8 @@ int init_ICM42670() {
         printf("Address could not be found");
     }
     else 
-        printf ("Address: 0x%02X\n",address);
+        //printf ("Address: 0x%02X\n",address);
+        printf ("");
     // Step 1: Check WHO_AM_I
     uint8_t who = 0;
     if (icm_i2c_read_byte(ICM42670_REG_WHO_AM_I, &who) != 0) {

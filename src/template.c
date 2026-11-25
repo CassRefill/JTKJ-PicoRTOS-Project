@@ -77,13 +77,13 @@ void initial_task(void *pvParameters) {
                 programState = PLAY_MSG;
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(200));
     }
 }
 
 void write_task(void *pvParameters) {
     (void)pvParameters;
-
+    
     while (1) {
         if(programState == READ_POS)
         {
@@ -118,7 +118,7 @@ void write_task(void *pvParameters) {
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(200));
     }
 }
 
@@ -145,7 +145,7 @@ void send_task(void *pvParameters) {
                 {
                     vTaskDelay(pdMS_TO_TICKS(60));
                 }
-                printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+                printf("\n\n\n\n\n\n\n\n\n");
                 programState = READ_POS;
             }
             else if(sw2_pressed)
@@ -155,6 +155,7 @@ void send_task(void *pvParameters) {
                 sw2_pressed = gpio_get(SW2_PIN);
                 if(!sw2_pressed)
                 {
+                    printf("\n\n\n\n\n\n\n\n\n");
                     programState = PLAY_MSG;
                 }
                 else
@@ -163,19 +164,19 @@ void send_task(void *pvParameters) {
                     {
                         vTaskDelay(pdMS_TO_TICKS(60));
                     }
+                    printf("%s", msg);
                     programState = IDLE;
                 }
             }
         }
         
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(200));
     }
 }
 
 void buzzer_task(void *pvParameters) {
     (void)pvParameters;
 
-    init_buzzer();
     rgb_led_write(RGB[0], RGB[1], RGB[2]);
 
     while (1) {
@@ -258,7 +259,7 @@ void imu_task(void *pvParameters) {
             SAVE = false;
         }
 
-        vTaskDelay(pdMS_TO_TICKS(150));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 
 }
@@ -274,6 +275,9 @@ int main() {
 
     // initializing RGB led
     init_rgb_led();
+
+    // initializing buzzer
+    init_buzzer();
 
     // initializing buttons
     init_sw1();
@@ -315,7 +319,9 @@ int main() {
         printf("IMU Task creation failed\n");
         return 0;
     }
-    
+
+    printf("\n\n\n\n\n\n\n\nHello!\n");
+
     // Start the FreeRTOS scheduler
     vTaskStartScheduler();
 
