@@ -53,16 +53,16 @@ void initial_task(void *pvParameters) {
 
         rgb_led_write(RGB[0], RGB[1], RGB[2]);
 
-        if(sw1_pressed != 0)
+        if(sw1_pressed)
         {
             programState = READ_POS;
         }
-        else if (sw2_pressed != 0)
+        else if (sw2_pressed)
         {
             programState = PLAY_MSG;
         }
 
-        vTaskDelay(250);
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -86,24 +86,18 @@ void write_task(void *pvParameters) {
         }
         else if(sw2_pressed)
         {
-            int timer = TimerStart();
-
-            while(timer < 2000)
+            vTaskDelay(pdMS_TO_TICKS(750));
+            if(!sw2_pressed)
             {
-                if(!sw2_pressed)
-                {
-                    SAVE = true;
-                    TimerStop();
-                }
-                else
-                {
-                    SEND_SPACE = true;
-                    TimerStop();
-                }
+                SAVE = true;
             }
-
+            else
+            {
+                SEND_SPACE = true;
+            }
         }
-        vTaskDelay(500);
+
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -127,23 +121,19 @@ void send_task(void *pvParameters) {
             memset(msg, 0, sizeof(msg));
             programState = READ_POS;
         }
-
-        int timer = TimerStart();
-
-        while(timer < 2000)
+        else if(sw2_pressed)
         {
+            vTaskDelay(pdMS_TO_TICKS(750));
             if(!sw2_pressed)
             {
-                TimerStop();
                 programState = PLAY_MSG;
             }
             else
             {
-                TimerStop();
                 programState = IDLE;
             }
         }
-        vTaskDelay(500);
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -175,10 +165,10 @@ void buzzer_task(void *pvParameters) {
             else
             {
                 buzzer_turn_off();
-                break;
+                programState = END_MSG;
             }
         }
-        vTaskDelay(250);
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
