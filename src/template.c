@@ -31,7 +31,7 @@ void write_task(void *pvParameters);
 void send_task(void *pvParameters);
 
 //Add here necessary states
-enum state { IDLE=1, READ_POS=2, END_MSG=3, PLAY_MSG=4 };
+enum state { IDLE=1, READ_POS, END_MSG, PLAY_MSG };
 enum state programState = IDLE;
 
 // Array to store RGB values
@@ -45,7 +45,6 @@ void initial_task(void *pvParameters) {
 
     init_sw1();
     init_sw2();
-    init_rgb_led();
 
     while (1) {
         sw1_pressed = gpio_get(SW1_PIN);
@@ -71,7 +70,6 @@ void write_task(void *pvParameters) {
 
     init_sw1();
     init_sw2();
-    init_rgb_led();
 
     while (2) {
         RGB[0], RGB[1] = 255, 0;
@@ -106,7 +104,6 @@ void send_task(void *pvParameters) {
 
     init_sw1();
     init_sw2();
-    init_rgb_led();
 
     while (3)
     {
@@ -143,18 +140,22 @@ void buzzer_task(void *pvParameters) {
     init_buzzer();
 
     while (4) {
+        printf(msg);
+
         for(int j = 0; j < sizeof(msg); ++j)
         {
+            vTaskDelay(pdMS_TO_TICKS(500));
+
             init_rgb_led();
 
             if(msg[j] == '-')
             {
-                buzzer_play_tone(440, 500);
+                buzzer_play_tone(400, 500);
                 stop_rgb_led();
             }
             if(msg[j] == '.')
             {
-                buzzer_play_tone(440, 250);
+                buzzer_play_tone(400, 250);
                 stop_rgb_led();
             }
             if(msg[j] == ' ')
@@ -164,10 +165,12 @@ void buzzer_task(void *pvParameters) {
             }
             else
             {
-                buzzer_turn_off();
-                programState = END_MSG;
+                break;
             }
         }
+
+        buzzer_turn_off();
+        programState = END_MSG;
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
@@ -177,37 +180,40 @@ void imu_task(void *pvParameters) {
 
     init_ICM42670();
 
-    ICM42670_start_with_default_values();
-
     short i = 0;
     
     float ax, ay, az, gx, gy, gz, t;
 
     while (2)
     {
+        ICM42670_start_with_default_values();
+
         if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
 
-            if(gx + 10 >= 90 && gx - 10 <= 90 && SAVE == true)
+            if(gz + 10 >= 90 && gz - 10 <= 90 && SAVE == true)
             {
                 msg[i] = '-';
+                printf(msg);
                 SAVE == false;
             }
-            else if(gx + 10 >= 0 && gx - 10 <= 0 && SAVE == true)
+            else if(gz + 10 >= 0 && gz - 10 <= 0 && SAVE == true)
             {
                 msg[i] = '.';
+                printf(msg);
                 SAVE == false;
             }
             else if(SAVE == false && SEND_SPACE == true)
             {
                 msg[i] = ' ';
+                printf(msg);
                 SEND_SPACE == false;
             }
-
-        } else {
+            ++i;
+        } 
+        else {
             printf("Failed to read imu data\n");
         }
-        ++i;
-        vTaskDelay(pdMS_TO_TICKS(60));
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 
 }
@@ -220,18 +226,46 @@ int main() {
     }
     init_hat_sdk();
     sleep_ms(300); //Wait some time so initialization of USB and hat is done.
-   
+
+    // initializing RGB led
+    init_rgb_led();
+
     // Initialize I2C
     init_i2c_default();
 
     // Create tasks
     TaskHandle_t hIN, hWR, hSE, hBuzz, hIMU = NULL;
 
-    xTaskCreate(initial_task, "InitialTask", DEFAULT_STACK_SIZE, NULL, 1, &hIN);
-    xTaskCreate(write_task, "WriteTask", DEFAULT_STACK_SIZE, NULL, 2, &hWR);
-    xTaskCreate(send_task, "SendTask", DEFAULT_STACK_SIZE, NULL, 3, &hSE);
-    xTaskCreate(buzzer_task, "BuzzerTask", DEFAULT_STACK_SIZE, NULL, 4, &hBuzz);
-    xTaskCreate(imu_task, "IMUTask", DEFAULT_STACK_SIZE, NULL, 2, &hIMU);
+    BaseType_t initRes = xTaskCreate(initial_task, "InitialTask", DEFAULT_STACK_SIZE, NULL, 4, &hIN);
+    if(initRes != pdPASS)
+    {
+        printf("Initial Task creation failed\n");
+        return 0;
+    }
+    initRes = xTaskCreate(write_task, "WriteTask", DEFAULT_STACK_SIZE, NULL, 4, &hWR);
+    if(initRes != pdPASS)
+    {
+        printf("Write Task creation failed\n");
+        return 0;
+    }
+    initRes = xTaskCreate(send_task, "SendTask", DEFAULT_STACK_SIZE, NULL, 3, &hSE);
+    if(initRes != pdPASS)
+    {
+        printf("Send Task creation failed\n");
+        return 0;
+    }
+    initRes = xTaskCreate(buzzer_task, "BuzzerTask", DEFAULT_STACK_SIZE, NULL, 2, &hBuzz);
+    if(initRes != pdPASS)
+    {
+        printf("Buzzer Task creation failed\n");
+        return 0;
+    }
+    initRes = xTaskCreate(imu_task, "IMUTask", DEFAULT_STACK_SIZE, NULL, 4, &hIMU);
+    if(initRes != pdPASS)
+    {
+        printf("IMU Task creation failed\n");
+        return 0;
+    }
     
     // Start the FreeRTOS scheduler
     vTaskStartScheduler();
