@@ -85,19 +85,19 @@ add_subdirectory(libs/usb-serial-debug)
 # Add examples if necessary here
 # Uncomment the examples that you want to include in your project.
 #
-add_subdirectory(examples/hello_blink)
-add_subdirectory(examples/hello_blink_freertos)
+# add_subdirectory(examples/hello_blink)
+# add_subdirectory(examples/hello_blink_freertos)
 # add_subdirectory(examples/hello_pico)
 # add_subdirectory(examples/hello_freertos)
-add_subdirectory(examples/hello_dual_cdc)
+# add_subdirectory(examples/hello_dual_cdc)
 # add_subdirectory(examples/hello_microphone)
-add_subdirectory(examples/compilation_errors)
-add_subdirectory(examples/hello_hat)
+# add_subdirectory(examples/compilation_errors)
+# add_subdirectory(examples/hello_hat)
 # add_subdirectory(examples/hat_example)
-add_subdirectory(examples/hat_imu_ex)
-add_subdirectory(examples/hat_imu_cdc_ex)
-add_subdirectory(examples/hello_serial_client)
-add_subdirectory(examples/hello_serial_bidirectional_client)
+# add_subdirectory(examples/hat_imu_ex)
+# add_subdirectory(examples/hat_imu_cdc_ex)
+# add_subdirectory(examples/hello_serial_client)
+# add_subdirectory(examples/hello_serial_bidirectional_client)
 # add_subdirectory(examples/hat_imu_display)
 #
 # You can edit it if you want to add new examples
@@ -111,7 +111,7 @@ add_subdirectory(examples/hello_serial_bidirectional_client)
 # Add the source files to be compiled
 # If you add the headers in a different directory, you should use: target_include_directories
 add_executable(${MAIN_TARGET}
-    src/main.c
+    src/template.c
 )
 
 # Links. Add all libraries that application is using. It must at least use the pico_stdlib
